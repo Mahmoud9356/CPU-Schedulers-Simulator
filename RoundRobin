@@ -1,0 +1,63 @@
+import java.util.*;
+
+public class RoundRobin {
+
+    public static void Sim(List<ProcessRR> Processes, int Quantum, int ContextSwitch){
+        Queue<ProcessRR> ReadyQueue = new LinkedList<>();
+        int CurrentTime = 0;
+        int Completed = 0;
+        int n = Processes.size();
+        Processes.sort(Comparator.comparingInt(p-> p.arrival));
+        boolean[] added = new boolean[n];
+
+        while(Completed < n){
+            for(int i = 0; i < n; i++){
+                if (!added[i] && Processes.get(i).arrival <= CurrentTime) {
+                    ReadyQueue.add(Processes.get(i));
+                    added[i] = true;
+                }
+            }
+
+            if (ReadyQueue.isEmpty()) {
+                CurrentTime++;
+                continue;
+            }
+
+            ProcessRR currentProcessRR = ReadyQueue.poll();
+            int ExecTime = Math.min(Quantum, currentProcessRR.remaining);
+            currentProcessRR.remaining -= ExecTime;
+            CurrentTime += ExecTime;
+
+            for(int i = 0; i < n; i++){
+                if (!added[i] && Processes.get(i).arrival <= CurrentTime) {
+                    ReadyQueue.add(Processes.get(i));
+                    added[i] = true;
+                }
+            }
+
+            if(currentProcessRR.remaining > 0) {
+                ReadyQueue.add(currentProcessRR);
+            } else {
+                currentProcessRR.completedTime = CurrentTime;
+                Completed++;
+            }
+
+            if(!ReadyQueue.isEmpty()){
+                CurrentTime += ContextSwitch;
+            }
+        }
+
+        double TotalWaitingTime = 0;
+        double TotalTurnaroundTime = 0;
+
+        for(ProcessRR p : Processes){
+            p.turnaround = p.completedTime - p.arrival;
+            p.waiting = p.turnaround - p.burst;
+            TotalTurnaroundTime += p.turnaround;
+            TotalWaitingTime += p.waiting;
+        }
+
+        System.out.println("Average Waiting Time = " + TotalWaitingTime / n);
+        System.out.println("Average Turnaround Time = " + TotalTurnaroundTime / n);
+    }
+}
